@@ -71,6 +71,7 @@ type Exporter struct {
 	prefix    string
 	delimiter string
 	svc       s3iface.S3API
+	waitTime  int
 }
 
 // Describe all the metrics we export
@@ -160,9 +161,12 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			s3CommonPrefixes, prometheus.GaugeValue, float64(commonPrefixes), e.bucket, e.prefix, e.delimiter,
 		)
 	}
+
+	log.Infoln("Sleeping for", e.waitTime, "seconds")
+	time.Sleep(time.Duration(e.waitTime) * time.Second)
 }
 
-func probeHandler(w http.ResponseWriter, r *http.Request, svc s3iface.S3API) {
+func probeHandler(w http.ResponseWriter, r *http.Request, svc s3iface.S3API, waitTime int) {
 	bucket := r.URL.Query().Get("bucket")
 	if bucket == "" {
 		http.Error(w, "bucket parameter is missing", http.StatusBadRequest)
@@ -177,6 +181,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request, svc s3iface.S3API) {
 		prefix:    prefix,
 		delimiter: delimiter,
 		svc:       svc,
+		waitTime:  waitTime,
 	}
 
 	registry := prometheus.NewRegistry()
@@ -237,6 +242,7 @@ func main() {
 		endpointURL    = app.Flag("s3.endpoint-url", "Custom endpoint URL").Default("").String()
 		disableSSL     = app.Flag("s3.disable-ssl", "Custom disable SSL").Bool()
 		forcePathStyle = app.Flag("s3.force-path-style", "Custom force path style").Bool()
+		waitTime       = app.Flag("wait-time", "Wait Time after each request in seconds").Default("0").Int()
 	)
 
 	log.AddFlags(app)
@@ -267,7 +273,7 @@ func main() {
 
 	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc(*probePath, func(w http.ResponseWriter, r *http.Request) {
-		probeHandler(w, r, svc)
+		probeHandler(w, r, svc, *waitTime)
 	})
 	http.HandleFunc(*discoveryPath, func(w http.ResponseWriter, r *http.Request) {
 		discoveryHandler(w, r, svc)
