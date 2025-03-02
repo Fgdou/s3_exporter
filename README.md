@@ -61,6 +61,7 @@ docker run -p 9340:9340 -e AWS_SDK_LOAD_CONFIG=true -e HOME=/ -v $HOME/.aws:/.aw
       --s3.endpoint-url=""       Custom endpoint URL
       --s3.disable-ssl           Custom disable SSL
       --s3.force-path-style      Custom force path style
+      --wait-time                Wait time  in seconds after API request, to reduce costs
       --log.level="info"         Only log messages with the given severity or above. Valid levels: [debug, info, warn, error, fatal]
       --log.format="logger:stderr"
                                  Set the log target and format. Example: "logger:syslog?appname=bob&local=7" or "logger:stdout?json=true"
